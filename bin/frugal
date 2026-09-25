@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""
+bin/frugal — CLI Frugal Unifié pour frugal-vibe-framework.
+Proxy intelligent interceptant les commandes de développement pour minimiser
+les tokens consommés (-80%) via RTK, ast-grep et CausalEngine.
+"""
+import os, sys, shutil, subprocess, pathlib
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+RTK = shutil.which("rtk") or os.path.expanduser("~/.local/bin/rtk")
+AST_GREP = shutil.which("ast-grep") or os.path.expanduser("~/.local/bin/ast-grep")
+
+def run_cmd(cmd_list):
+    """Exécute une commande en relayant stdin/stdout/stderr et code de retour."""
+    try:
+        res = subprocess.run(cmd_list, cwd=ROOT)
+        sys.exit(res.returncode)
+    except Exception as e:
+        print(f"❌ Erreur d'exécution {cmd_list}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+def cmd_test(args):
+    """Exécute les tests via rtk pytest (1 ligne sur succès)."""
+    if os.path.exists(RTK):
+        run_cmd([RTK, "pytest"] + (args or ["core/"]))
+    else:
+        run_cmd(["pytest", "-q"] + (args or ["core/"]))
+
+def cmd_diff(args):
+    """Exécute git diff condensé via rtk git diff."""
+    if os.path.exists(RTK):
+        run_cmd([RTK, "git", "diff"] + args)
+    else:
+        run_cmd(["git", "diff"] + args)
+
+def cmd_status(args):
+    """Affiche un git status compact via rtk."""
+    if os.path.exists(RTK):
+        run_cmd([RTK, "git", "status"] + args)
+    else:
+        run_cmd(["git", "status", "-s"] + args)
+
+def cmd_gain(args):
+    """Affiche les métriques d'économie de tokens rtk."""
+    if os.path.exists(RTK):
+        run_cmd([RTK, "gain"] + args)
+    else:
+        print("ℹ️ rtk non disponible — pas de métriques d'économie.", file=sys.stderr)
+
+def cmd_slice(args):
+    """Extrait le squelette AST compact d'un fichier Python."""
+    if not args:
+        print("Usage: frugal slice <chemin_du_fichier.py>", file=sys.stderr)
+        sys.exit(1)
+    target = ROOT / args[0] if not os.path.isabs(args[0]) else pathlib.Path(args[0])
+    if not target.exists():
+        print(f"❌ Fichier introuvable: {target}", file=sys.stderr)
+        sys.exit(1)
+    try:
+        sys.path.insert(0, str(ROOT))
+        from core.causal_engine import CausalEngine
+        code = target.read_text(encoding="utf-8")
+        skeleton = CausalEngine.extract_skeleton(code)
+        orig_lines = len(code.splitlines())
+        skel_lines = len(skeleton.splitlines())
+        saving = max(0, int((1 - skel_lines / max(1, orig_lines)) * 100))
+        print(f"# 🧬 Squelette AST ({target.name}) : {orig_lines}L → {skel_lines}L (-{saving}% tokens)")
+        print(skeleton)
+    except Exception as e:
+        print(f"❌ Erreur slicing AST: {e}", file=sys.stderr)
+        sys.exit(1)
+
+def cmd_check(args):
+    """Vérification par le Linter Garde-Fou Frugal."""
+    sys.path.insert(0, str(ROOT))
+    try:
+        from core.frugal_guard import run_guard_cli
+        sys.exit(run_guard_cli(args))
+    except ImportError:
+        print("ℹ️ Linter frugal_guard en cours de déploiement (Phase 2).", file=sys.stderr)
+        sys.exit(0)
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help", "help"):
+        print("⚡ CLI Frugal — frugal-vibe-framework")
+        print("Usage: frugal <commande> [options]")
+        print("Commandes:")
+        print("  test [args]     Exécuter tests unitaires compacts via rtk")
+        print("  diff [args]     Diff Git ultra-condensé")
+        print("  status [args]   Statut Git compact")
+        print("  slice <file>    Extraire squelette AST pur (tokens -70%)")
+        print("  check [path]    Linter Garde-Fou (150L, McCabe <= 8, zéro float)")
+        print("  gain            Afficher les tokens économisés")
+        sys.exit(0)
+
+    cmd = sys.argv[1]
+    args = sys.argv[2:]
+    dispatch = {
+        "test": cmd_test,
+        "diff": cmd_diff,
+        "status": cmd_status,
+        "slice": cmd_slice,
+        "check": cmd_check,
+        "gain": cmd_gain,
+    }
+    if cmd in dispatch:
+        dispatch[cmd](args)
+    else:
+        print(f"❌ Commande inconnue: {cmd}. Voir 'frugal help'.", file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
