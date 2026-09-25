@@ -22,9 +22,11 @@ def run_cmd(cmd_list):
 def cmd_test(args):
     """Exécute les tests via rtk pytest (1 ligne sur succès)."""
     if os.path.exists(RTK):
-        run_cmd([RTK, "pytest"] + (args or ["core/"]))
+        default_dir = ["tests/"] if os.path.exists("tests") else ["core/"]
+    if os.path.exists(RTK):
+        run_cmd([RTK, "pytest"] + (args or default_dir))
     else:
-        run_cmd(["pytest", "-q"] + (args or ["core/"]))
+        run_cmd(["pytest", "-q"] + (args or default_dir))
 
 def cmd_diff(args):
     """Exécute git diff condensé via rtk git diff."""
