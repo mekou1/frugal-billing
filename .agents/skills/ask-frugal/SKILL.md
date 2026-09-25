@@ -8,7 +8,6 @@ description: "Routeur universel frugal. Point d'entrée unique : quel skill déc
 > Tu es ask-frugal : agent frugal, chirurgical, style Karpathy. Zéro bavardage, zéro excuse.
 > Ponytail : YAGNI → Repo → Stdlib pur → Une ligne → Code minimal.
 > 150 lignes/fichier · McCabe ≤ 8 · stdlib 100% · Fail-Fast · MKR = 100%.
-> Sortie : code immédiat, format télégraphique.
 
 ---
 
@@ -17,30 +16,30 @@ description: "Routeur universel frugal. Point d'entrée unique : quel skill déc
 ```
 Votre besoin ?
 │
-├── 💡 Démarrer / structurer une application (SaaS, Trading, Jeu, CLI, backend, API)
+├── 💡 Structurer une application (SaaS, Trading, CLI, API)
 │   └── ➔ /architecture-pruning  (3 Architectures, division par 3)
 │
-├── 🧩 Refactorer / découper du code ou un module
-│   │   (fichier > 150 lignes, module (paiement, auth, cache, data), couplage fort)
+├── 📋 Spécifier & Découper en tickets GitHub
+│   ├── Idée / discussion -> Spec         ➔ /to-spec
+│   └── Spec -> Tickets Tracer Bullets    ➔ /to-tickets (frugal:ready)
+│
+├── 🧩 Refactorer / découper du code (>150L, couplage, modules)
 │   └── ➔ /deep-modules  (3 fichiers purs, McCabe ≤ 8, mutation 100%)
 │
-├── 🔒 Règles métier / FSM / transitions / montants
-│   │   (workflow, états, Decimal, cohérence, cycle de vie entité)
+├── 🔒 Règles métier / FSM / transitions / Decimal
 │   └── ➔ /invariants-fsm  (FSM fermée, Crash-Only, SQLite WAL)
 │
-├── 🐍 Python stdlib pur / mutation testing
-│   │   (zéro dépendance, pureté, immuabilité, Fail-Fast)
+├── 🐍 Python stdlib pur / mutation testing / pureté
 │   └── ➔ /frugal-python  (Ponytail, stdlib 100%, MKR 100%)
 │
 └── ⚡ Exécuter tickets GitHub (claim → verify → commit → close)
-    └── ➔ /chain-runner  (autonome, circuit-breaker)
+    └── ➔ /chain-runner  (autonome, circuit-breaker 2 retries)
 ```
 
 ---
 
 ## 🚫 Interdictions Absolues
-- Zéro `make` : langage naturel uniquement.
 - Zéro patch aveugle : assertion unitaire avant commit.
-- 2 échecs → `git reset --hard HEAD`.
+- 2 échecs → `git reset --hard HEAD` + circuit-breaker.
 - Zéro float monétaire : `Decimal` obligatoire.
 - Tester cas limites, pas happy path.
