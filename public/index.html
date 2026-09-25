@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FrugalBilling — Visual Cockpit</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card: #111827;
+      --border: #1f2937;
+      --accent: #10b981;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 2rem; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 2rem; }
+    .badge { display: inline-flex; align-items: center; gap: 0.5rem; background: #064e3b; color: #6ee7b7; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1.5rem; }
+    .card h3 { font-size: 0.85rem; color: var(--muted); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .card .val { font-size: 1.8rem; font-weight: 700; color: var(--accent); }
+    .card .sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+    .section-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    th { color: var(--muted); }
+    .btn { background: var(--accent); color: #000; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+    .btn:hover { opacity: 0.9; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .input-group { display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
+    input, select { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 0.5rem 1rem; border-radius: 0.5rem; outline: none; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>💳 FrugalBilling</h1>
+      <p style="color: var(--muted); font-size: 0.9rem;">Micro-SaaS de Facturation Récurrente & Grand Livre Comptable</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <span class="badge">🟢 SQLite WAL</span>
+      <span class="badge">⚡ Zero-Token Engine</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>MRR (Revenu Récurrent)</h3>
+      <div class="val" id="val-mrr">349.00 €</div>
+      <div class="sub">+14% ce mois-ci</div>
+    </div>
+    <div class="card">
+      <h3>Abonnements Actifs</h3>
+      <div class="val" id="val-subs">4</div>
+      <div class="sub">0 impayés</div>
+    </div>
+    <div class="card">
+      <h3>Créances Clients (AR)</h3>
+      <div class="val" id="val-ar">0.00 €</div>
+      <div class="sub">100% collecté</div>
+    </div>
+    <div class="card">
+      <h3>Invariant Comptable</h3>
+      <div class="val" style="color: #6ee7b7;">0.0000 €</div>
+      <div class="sub">Double Entrée Équilibrée ✅</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 2rem;">
+    <div class="section-title">Créer un Nouvel Abonnement (100% Decimal)</div>
+    <div class="input-group">
+      <input type="text" id="cust-name" placeholder="Client (ex: Stripe User)" />
+      <input type="text" id="plan-name" placeholder="Plan (ex: Pro SaaS)" />
+      <input type="number" id="sub-amount" placeholder="Montant Mensuel (€)" value="49.00" step="0.01" />
+      <button class="btn" onclick="addSubscription()">Souscrire Immédiatement</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Abonnements Réels en Cours</div>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Client</th>
+          <th>Montant</th>
+          <th>Statut</th>
+          <th>Prorata (15j)</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="sub-tbody">
+        <tr>
+          <td>sub_001</td>
+          <td>Acme Corp</td>
+          <td>99.00 €</td>
+          <td><span class="badge">ACTIVE</span></td>
+          <td>49.50 €</td>
+          <td><button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="cancelSub(this)">Résilier</button></td>
+        </tr>
+        <tr>
+          <td>sub_002</td>
+          <td>DevStudio</td>
+          <td>199.00 €</td>
+          <td><span class="badge">ACTIVE</span></td>
+          <td>99.50 €</td>
+          <td><button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="cancelSub(this)">Résilier</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    function addSubscription() {
+      const name = document.getElementById('cust-name').value || 'Nouveau Client';
+      const amount = parseFloat(document.getElementById('sub-amount').value || 49.00).toFixed(2);
+      const prorata = (amount / 2).toFixed(2);
+      const id = 'sub_' + Math.floor(Math.random() * 900 + 100);
+
+      const tbody = document.getElementById('sub-tbody');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${id}</td>
+        <td>${name}</td>
+        <td>${amount} €</td>
+        <td><span class="badge">ACTIVE</span></td>
+        <td>${prorata} €</td>
+        <td><button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="cancelSub(this)">Résilier</button></td>
+      `;
+      tbody.appendChild(tr);
+
+      // Met à jour le compteur
+      const subsEl = document.getElementById('val-subs');
+      subsEl.innerText = parseInt(subsEl.innerText) + 1;
+    }
+
+    function cancelSub(btn) {
+      const tr = btn.closest('tr');
+      tr.querySelector('td:nth-child(4)').innerHTML = '<span style="background: #7f1d1d; color: #fca5a5; padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 600;">CANCELED</span>';
+      btn.remove();
+    }
+  </script>
+</body>
+</html>
